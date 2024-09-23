@@ -1,5 +1,4 @@
 import axios from "axios";
-import Card from "../components/Card/Card";
 
 // Define action types as constants
 const DATA_REQUEST = "DATA_REQUEST";
@@ -8,6 +7,7 @@ const DATA_FAILURE = "DATA_FAILURE";
 const SELECT_DATA_REQUEST = "SELECT_DATA_REQUEST";
 const SELECT_DATA_SUCCESS = "SELECT_DATA_SUCCESS";
 const SELECT_DATA_FAILURE = "SELECT_DATA_FAILURE";
+
 export const fetchAllData = () => async (dispatch) => {
   try {
     dispatch({ type: DATA_REQUEST });
@@ -16,61 +16,65 @@ export const fetchAllData = () => async (dispatch) => {
     );
     dispatch({ type: DATA_SUCCESS, payload: data });
   } catch (error) {
-    dispatch({ type: DATA_FAILURE });
+    dispatch({ type: DATA_FAILURE, payload: error.message });
   }
 };
+
 export const selectData =
   (group, allTickets, orderValue) => async (dispatch) => {
     try {
       dispatch({ type: SELECT_DATA_REQUEST });
       let user = false;
-      let mySet = new Set();
-      let arr = [],
+      let uniqueSet = new Set();
+      let filteredArray = [],
         selectedData = [];
+
       if (group === "status") {
         allTickets.forEach((element) => {
-          mySet.add(element.status);
+          uniqueSet.add(element.status);
         });
-        arr = [...mySet];
-        arr.forEach((element, index) => {
-          let arr = allTickets.filter((fElement) => {
-            return element === fElement.status;
+        const statusArray = [...uniqueSet];
+        statusArray.forEach((status, index) => {
+          const statusGroup = allTickets.filter((ticket) => {
+            return status === ticket.status;
           });
           selectedData.push({
             [index]: {
-              title: element,
-              value: arr,
+              title: status,
+              value: statusGroup,
             },
           });
         });
       } else if (group === "user") {
         user = true;
         allTickets?.allUser?.forEach((element, index) => {
-          arr = allTickets?.allTickets?.filter((Felement) => {
-            return element.id === Felement.userId;
+          filteredArray = allTickets?.allTickets?.filter((ticket) => {
+            return element.id === ticket.userId;
           });
           selectedData.push({
             [index]: {
               title: element.name,
-              value: arr,
+              value: filteredArray,
             },
           });
         });
       } else {
-        let prior_list = ["No priority", "Urgent", "High", "Medium", "Low"];
-        prior_list.forEach((element, index) => {
-          arr = allTickets.filter((fElement) => {
-            return index === fElement.priority;
+        const priorityList = ["No priority", "Urgent", "High", "Medium", "Low"];
+        priorityList.forEach((priority, index) => {
+          filteredArray = allTickets.filter((ticket) => {
+            return index === ticket.priority;
           });
 
           selectedData.push({
             [index]: {
-              title: element,
-              value: arr,
+              title: priority,
+              value: filteredArray,
             },
           });
         });
       }
+
+      // Sorting based on orderValue
       if (orderValue === "title") {
         selectedData.forEach((element, index) => {
           element[index]?.value?.sort((a, b) => a.title.localeCompare(b.title));
@@ -81,6 +85,7 @@ export const selectData =
           element[index]?.value?.sort((a, b) => b.priority - a.priority);
         });
       }
+
       dispatch({ type: SELECT_DATA_SUCCESS, payload: { selectedData, user } });
     } catch (error) {
       dispatch({ type: SELECT_DATA_FAILURE, payload: error.message });
